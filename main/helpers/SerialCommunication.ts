@@ -7,7 +7,7 @@ interface PortData {
     baudRate: number;
 }
 
-interface ReceivedData extends PortData {
+export interface ReceivedData extends PortData {
     timestamp: string;
     type: 'values' | 'headers';
     data: string[];
@@ -87,7 +87,7 @@ export class SerialCommunication {
             }
 
             try {
-                outChannel.reply('serial-data', JSON.stringify(outData));
+                outChannel.reply('serial-data', outData);
             } catch (err) {
                 console.log('IpcMainEvent: failed to respond "serial data"');
             }

@@ -5,6 +5,7 @@ const { Content, Header } = Layout;
 
 
 import SerialConnect from "../components/SerialConnect";
+import Monitor from "../components/Monitor";
 
 const Home = () => {
 
@@ -14,6 +15,10 @@ const Home = () => {
 
                 <SerialConnect />
             </Header>
+            <Content>
+                <Monitor />
+
+            </Content>
         </Layout>
     );
 };
