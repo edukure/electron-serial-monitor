@@ -32,7 +32,7 @@ export class SerialCommunication {
             });
 
         if (outChannel) {
-            outChannel.reply('serial-ports', JSON.stringify(ports.map((x) => x.path)));
+            outChannel.reply('serial-ports', ports);
         }
     }
 

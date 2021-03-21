@@ -14,11 +14,11 @@ if (isProd) {
 const serial = new SerialCommunication();
 
 // ipcMain Serial Communication events
-ipcMain.on('serial-connect', async (channel, arg) => {
+ipcMain.on('serial-connect', async (channel, args) => {
     if (serial.isOpen()) {
         await serial.close();
     }
-    serial.open(JSON.parse(arg), channel);
+    serial.open(args, channel);
 });
 
 ipcMain.on('serial-disconnect', () => serial.close());
