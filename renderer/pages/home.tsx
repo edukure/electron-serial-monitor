@@ -10,7 +10,7 @@ const Home = () => {
 
     return (
         <Layout >
-            <Header >
+            <Header style={{background: "#00ADB2"}}>
 
                 <SerialConnect />
             </Header>
