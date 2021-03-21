@@ -7,7 +7,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   return (
     <>
       <Head>
-        <title>FisioFeedback</title>
+        <title>Serial Monitor</title>
       </Head>
 
       <Component {...pageProps} />
