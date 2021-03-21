@@ -10,14 +10,13 @@ import Monitor from "../components/Monitor";
 const Home = () => {
 
     return (
-        <Layout >
+        <Layout style={{height: "100vh"}}>
             <Header style={{background: "#00ADB2"}}>
 
                 <SerialConnect />
             </Header>
-            <Content>
+            <Content style={{height: "100%"}}>
                 <Monitor />
-
             </Content>
         </Layout>
     );

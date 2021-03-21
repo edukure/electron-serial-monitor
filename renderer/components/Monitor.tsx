@@ -1,6 +1,6 @@
 import electron from 'electron';
 import { useEffect, useState } from 'react';
-import { Layout, Space, Select, Button, Typography } from 'antd';
+import { Space, List, Affix} from 'antd';
 
 import { ReceivedData } from '../../main/helpers/SerialCommunication';
 
@@ -9,7 +9,7 @@ interface Data {
     value: number;
 }
 
-const SerialConnect = () => {
+const Monitor = () => {
     const [data, setData] = useState<Data[]>([]);
 
     const ipcRenderer = electron.ipcRenderer || false;
@@ -38,21 +38,29 @@ const SerialConnect = () => {
         if(!data) return;
         const value = parseFloat(data[0])
 
+        const formatedTimestamp = timestamp.substring(11,23);
+
         return {
-            timestamp, value
+            timestamp: formatedTimestamp, value
         }
 
     };
 
     const onDataHandler = (event, args) => {
         setData(data => [...data, formatData(args)]);
+        var element = document.getElementById("scroll");
+        element.scrollTop = element.scrollHeight - element.clientHeight;
     }
 
+    
+
+    
+
     return (
-        <Space align="center" direction="vertical">
-            {data.map(d => <p key={d.timestamp}>{`${d.timestamp}: ${d.value}`}</p>)}
-        </Space>
+        <div id="scroll" style={{overflow: "auto", maxHeight:"100%"}}>
+            <List style={{height:"100%"}} size="small" bordered dataSource={data}  renderItem={item => <List.Item>{`${item.timestamp}: ${item.value}`}</List.Item>}/>
+        </div>
     );
 };
 
-export default SerialConnect;
+export default Monitor;
