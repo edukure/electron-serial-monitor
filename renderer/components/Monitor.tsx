@@ -1,6 +1,6 @@
 import electron from 'electron';
 import { useEffect, useState } from 'react';
-import { Space, List, Affix} from 'antd';
+import { List} from 'antd';
 
 import { ReceivedData } from '../../main/helpers/SerialCommunication';
 
@@ -52,13 +52,13 @@ const Monitor = () => {
         element.scrollTop = element.scrollHeight - element.clientHeight;
     }
 
-    
-
-    
-
     return (
-        <div id="scroll" style={{overflow: "auto", maxHeight:"100%"}}>
-            <List style={{height:"100%"}} size="small" bordered dataSource={data}  renderItem={item => <List.Item>{`${item.timestamp}: ${item.value}`}</List.Item>}/>
+        <div style={{ paddingBottom: "50px", height: "100%",  background: "white", border: "1px solid lightgray", borderRadius: "2px"}}>
+            <div style={{height: "50px", background: "white"}}>
+
+            </div>
+            <List id="scroll" style={{maxHeight: "100%" , overflow: "auto"}} size="small" dataSource={data} 
+            renderItem={item => <List.Item>{`${item.timestamp}: ${item.value}`}</List.Item>}/>
         </div>
     );
 };
