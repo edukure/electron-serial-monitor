@@ -2,102 +2,100 @@ import { IpcMainEvent } from 'electron';
 import readline from '@serialport/parser-readline';
 import SerialPort from 'serialport';
 
-interface PortData {
+interface PortInfo {
     port: string;
     baudRate: number;
 }
 
-export interface ReceivedData extends PortData {
+export interface ReceivedData extends PortInfo {
     timestamp: string;
     type: 'values' | 'headers';
     data: string[];
     raw: string;
 }
 
-export class SerialCommunication {
-    private port: SerialPort;
+interface Port {
+    path: string;
+    pnpId: string;
+}
 
-    constructor() {
-        this.loadPorts();
-    }
+interface SerialCommunication {
+    port: SerialPort;
+    listPorts(): Promise<Port[]>;
+    open(channel: IpcMainEvent, config: PortInfo): void;
+    close(): Promise<void>;
+    write(data: string): void;
+    isOpen(): boolean;
+    onListPorts(event: IpcMainEvent, args): void;
+    onOpen(event: IpcMainEvent, args): void;
+    onClose(event: IpcMainEvent, args): void;
+}
 
-    public async loadPorts(outChannel?: IpcMainEvent) {
-        let ports = await SerialPort.list();
+export const createSerialCommunication = (): SerialCommunication => {
+    let port: SerialPort = null;
 
-        ports = ports
-            .filter((p) => p.serialNumber !== undefined)
-            .map((p) => {
-                const { path, serialNumber, comNumber, pnpId } = p;
-                return { path, serialNumber, comNumber, pnpId };
-            });
+    const listPorts = async (): Promise<Port[]> => {
+        let ports = [];
 
-        if (outChannel) {
-            outChannel.reply('serial-ports', ports);
+        try {
+            const rawPortsInfo = await SerialPort.list();
+            ports = rawPortsInfo
+                .filter((p) => p.productId !== undefined)
+                .map((p) => {
+                    const { path, pnpId } = p;
+                    return { path, pnpId };
+                });
+        } catch (error) {
+            console.log("Couldn't list serial ports");
         }
-    }
 
-    public open(data: PortData, outChannel: IpcMainEvent) {
-        this.port = new SerialPort(
-            data.port,
-            {
-                baudRate: data.baudRate,
-            },
-            (err) => {
-                if (err) {
-                    console.log('SerialPort.open error', err);
-                    outChannel.reply('serial-error', err.message);
-                }
-            }
-        );
+        return ports;
+    };
+
+    const open = (event: IpcMainEvent, config: PortInfo) => {
+        port = new SerialPort(config.port, { baudRate: config.baudRate });
 
         const parser = new readline();
-        this.port.pipe(parser);
+        port.pipe(parser);
 
-        this.port.on('open', () => {
+        port.on('open', () => {
             try {
-                outChannel.reply('serial-opened', 'opened');
+                event.reply('serial-opened', 'opened');
             } catch (err) {
                 console.log('IpcMainEvent: failed to respond "serial port opened"');
             }
         });
 
-        this.port.on('close', () => {
+        port.on('close', () => {
             try {
-                outChannel.reply('serial-closed', 'closed');
+                event.reply('serial-closed', 'closed');
             } catch (err) {
                 console.log('IpcMainEvent: failed to respond "serial port closed"');
             }
         });
 
-        let first = true;
         parser.on('data', (line: string) => {
-            const outData: ReceivedData = {
+            const receivedData: ReceivedData = {
                 timestamp: new Date().toISOString(),
-                port: data.port,
-                baudRate: data.baudRate,
+                port: config.port,
+                baudRate: config.baudRate,
                 type: 'values',
                 data: line.split(','),
                 raw: line,
             };
 
-            if (first) {
-                first = false;
-                outData.type = 'headers';
-                outData.data = line.split(',');
-            }
-
             try {
-                outChannel.reply('serial-data', outData);
+                event.reply('serial-data', receivedData);
             } catch (err) {
                 console.log('IpcMainEvent: failed to respond "serial data"');
             }
         });
-    }
+    };
 
-    public async close(): Promise<void> {
-        if (this.port && this.port.isOpen) {
+    const close = async (): Promise<void> => {
+        if (port && port.isOpen) {
             return new Promise((resolve, reject) => {
-                this.port.close((err) => {
+                port.close((err) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -106,15 +104,42 @@ export class SerialCommunication {
                 });
             });
         }
-    }
+    };
 
-    public async write(data: string) {
-        if (this.port && this.port.isOpen) {
-            this.port.write(data);
+    const write = (data: string) => {
+        if (port && port.isOpen) {
+            port.write(data);
         }
-    }
+    };
 
-    public isOpen(): boolean {
-        return this.port && this.port.isOpen;
-    }
-}
+    const isOpen = (): boolean => {
+        return port && port.isOpen;
+    };
+
+    const onListPorts = async (event: IpcMainEvent, args) => {
+        const ports = await listPorts();
+        event.reply('serial-ports', ports);
+    };
+
+    const onOpen = async (event: IpcMainEvent, args: PortInfo) => {
+        open(event, args);
+        event.reply('serial-open', 'Serial opened');
+    };
+
+    const onClose = async (event: IpcMainEvent, args) => {
+        close();
+        event.reply('serial-closed', 'Serial closed');
+    };
+
+    return {
+        port,
+        open,
+        onOpen,
+        isOpen,
+        close,
+        onClose,
+        listPorts,
+        onListPorts,
+        write,
+    };
+};

@@ -1,17 +1,11 @@
 import electron from 'electron';
 import { useEffect, useState } from 'react';
-import { Layout, Space, Select, Button } from 'antd';
+import { Space, Select, Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
 import baudRates from '../../utils/baudrates';
-
-
-interface Data {
-    timestamp: string;
-    value: number;
-}
 
 const SerialConnect = () => {
     const [list, setList] = useState(null);
@@ -31,16 +25,20 @@ const SerialConnect = () => {
 
         return () => {
             removeSerialEvents();
-        }
+        };
     }, []);
 
     const removeSerialEvents = () => {
-        if(ipcRenderer) {
-            ipcRenderer.removeListener("serial-opened", () => {console.log("serial-opened removed")});
-            ipcRenderer.removeListener("serial-ports", () => {console.log("serial-ports removed")});
-            ipcRenderer.send("serial-disconnect");
+        if (ipcRenderer) {
+            ipcRenderer.removeListener('serial-opened', () => {
+                console.log('serial-opened removed');
+            });
+            ipcRenderer.removeListener('serial-ports', () => {
+                console.log('serial-ports removed');
+            });
+            ipcRenderer.send('serial-disconnect');
         }
-    }
+    };
 
     const refreshSerialPorts = () => {
         if (ipcRenderer) {
@@ -67,8 +65,6 @@ const SerialConnect = () => {
             setIsSerialOpen(false);
         }
     };
-
-   
 
     return (
         <Space align="center">

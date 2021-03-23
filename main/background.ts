@@ -1,7 +1,7 @@
-import { app, ipcMain, BrowserWindow } from 'electron';
+import { app, ipcMain, BrowserWindow, IpcMainEvent } from 'electron';
 import serve from 'electron-serve';
 import { createWindow } from './helpers';
-import { SerialCommunication } from './helpers/SerialCommunication';
+import { SerialCommunication, createSerialCommunication } from './helpers/SerialCommunication';
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -11,7 +11,8 @@ if (isProd) {
     app.setPath('userData', `${app.getPath('userData')} (development)`);
 }
 
-const serial = new SerialCommunication();
+// const serial = new SerialCommunication();
+const serial = createSerialCommunication();
 
 // ipcMain Serial Communication events
 ipcMain.on('serial-connect', async (channel, args) => {
@@ -23,7 +24,8 @@ ipcMain.on('serial-connect', async (channel, args) => {
 
 ipcMain.on('serial-disconnect', () => serial.close());
 
-ipcMain.on('serial-refresh-ports', (channel) => serial.loadPorts(channel));
+
+ipcMain.on("serial-refresh-ports", serial.onListPorts);
 
 
 // launch window when ready
