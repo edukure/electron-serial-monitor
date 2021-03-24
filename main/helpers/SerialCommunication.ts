@@ -20,6 +20,11 @@ export interface Port {
     baudRate?: number;
 }
 
+export interface Data {
+    timestamp: string;
+    value: number;
+}
+
 interface SerialCommunication {
     port: SerialPort;
     listPorts(): Promise<Port[]>;
@@ -31,12 +36,6 @@ interface SerialCommunication {
     onOpen(event: IpcMainEvent, args): void;
     onClose(event: IpcMainEvent, args): void;
 }
-
-export interface Data {
-    timestamp: string;
-    value: number;
-}
-
 
 export const createSerialCommunication = (): SerialCommunication => {
     let port: SerialPort = null;
@@ -129,6 +128,9 @@ export const createSerialCommunication = (): SerialCommunication => {
     };
 
     const onOpen = async (event: IpcMainEvent, args: Port) => {
+        if (isOpen()) {
+            await close();
+        }
         open(event, args);
         event.reply('serial-open', 'Serial opened');
     };

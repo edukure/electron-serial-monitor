@@ -15,14 +15,9 @@ if (isProd) {
 const serial = createSerialCommunication();
 
 // ipcMain Serial Communication events
-ipcMain.on('serial-connect', async (channel, args) => {
-    if (serial.isOpen()) {
-        await serial.close();
-    }
-    serial.open(channel, args);
-});
+ipcMain.on('serial-connect', serial.onOpen);
 
-ipcMain.on('serial-disconnect', () => serial.close());
+ipcMain.on('serial-disconnect', serial.onClose);
 
 ipcMain.on('serial-refresh-ports', serial.onListPorts);
 
