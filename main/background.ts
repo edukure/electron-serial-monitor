@@ -1,4 +1,4 @@
-import { app, ipcMain, BrowserWindow, IpcMainEvent } from 'electron';
+import { app, ipcMain, BrowserWindow } from 'electron';
 import serve from 'electron-serve';
 import { createWindow } from './helpers';
 import { createSerialCommunication } from './helpers/SerialCommunication';
@@ -11,7 +11,6 @@ if (isProd) {
     app.setPath('userData', `${app.getPath('userData')} (development)`);
 }
 
-// const serial = new SerialCommunication();
 const serial = createSerialCommunication();
 
 // ipcMain Serial Communication events
@@ -39,6 +38,7 @@ ipcMain.on('serial-refresh-ports', serial.onListPorts);
     }
 })();
 
+
 app.on('window-all-closed', () => {
     app.quit();
 });
@@ -51,3 +51,27 @@ app.on('activate', () => {
         });
     }
 });
+
+
+/* Plotter window */
+
+let plotterWindow;
+
+ipcMain.on("open-plotter-window", async () => {
+    plotterWindow = createWindow("plotter", {
+        width: 1000,
+        height: 600
+    })
+
+    if (isProd) {
+        await plotterWindow.loadURL('app://./plotter.html');
+    } else {
+        const port = process.argv[2];
+        await plotterWindow.loadURL(`http://localhost:${port}/plotter`);
+        plotterWindow.webContents.openDevTools();
+    }
+})
+
+ipcMain.on("send-to-plotter", (event, data) => {
+    plotterWindow.webContents.send("plot-data", data)
+})

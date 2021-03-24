@@ -11,6 +11,7 @@ type SerialContextData = {
     isSerialOpen: boolean;
     refreshSerialPorts(): void;
     data: Data[];
+    setIsPlotterOpen(value: boolean);
 };
 
 type SerialProviderProps = {
@@ -24,6 +25,7 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
     const [selectedPort, setSelectedPort] = useState<Port>(null);
     const [isSerialOpen, setIsSerialOpen] = useState(false);
     const [data, setData] = useState<Data[]>([]);
+    const [isPlotterOpen, setIsPlotterOpen] = useState(false);
 
     const ipcRenderer = electron.ipcRenderer || false;
 
@@ -44,6 +46,13 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
         };
     }, []);
 
+
+    useEffect(() => {
+        if (isPlotterOpen && ipcRenderer) {
+            ipcRenderer.send('send-to-plotter', data);
+        }
+    }, [data]);
+
     const formatData = (receivedData: ReceivedData): Data => {
         const { timestamp, data } = receivedData;
 
@@ -60,14 +69,13 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
 
     const onData = (event, args) => {
         setData((data) => [...data, formatData(args)]);
-        
     };
 
     const removeSerialEvents = () => {
         if (ipcRenderer) {
             ipcRenderer.removeAllListeners('serial-opened');
             ipcRenderer.removeAllListeners('serial-ports');
-            ipcRenderer.removeAllListeners("serial-data")
+            ipcRenderer.removeAllListeners('serial-data');
             ipcRenderer.send('serial-disconnect');
         }
     };
@@ -108,7 +116,8 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
                 selectedPort,
                 isSerialOpen,
                 refreshSerialPorts,
-                data
+                data,
+                setIsPlotterOpen
             }}>
             {children}
         </SerialContext.Provider>
