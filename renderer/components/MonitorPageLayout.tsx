@@ -1,4 +1,4 @@
-import electron from "electron"
+import electron from 'electron';
 import React, { useContext } from 'react';
 import { Layout, Typography, Button } from 'antd';
 import { LineChartOutlined } from '@ant-design/icons';
@@ -7,21 +7,21 @@ const { Text } = Typography;
 
 const { Content, Header } = Layout;
 
-import SerialConnect from '../components/SerialConnect';
-import Monitor from '../components/Monitor';
+import SerialConnect from './SerialConnect';
+import Monitor from './Monitor';
 import { SerialContext } from '../context/SerialContext';
 
 const Home = () => {
-    const {setIsPlotterOpen} = useContext(SerialContext);
+    const { setIsPlotterOpen } = useContext(SerialContext);
 
     const ipcRenderer = electron.ipcRenderer || false;
 
     const handleOpenPlotter = () => {
-        if(ipcRenderer) {
-            ipcRenderer.send("open-plotter-window");
+        if (ipcRenderer) {
+            ipcRenderer.send('open-plotter-window');
         }
         setIsPlotterOpen(true);
-        console.log("LUL")
+        console.log('LUL');
     };
 
     return (
