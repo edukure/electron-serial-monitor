@@ -20,11 +20,12 @@ ipcMain.on('serial-disconnect', serial.onClose);
 
 ipcMain.on('serial-refresh-ports', serial.onListPorts);
 
+let mainWindow;
 // launch window when ready
 (async () => {
     await app.whenReady();
 
-    const mainWindow = createWindow('main', {
+    mainWindow = createWindow('main', {
         width: 1000,
         height: 600,
     });
@@ -70,8 +71,5 @@ ipcMain.on("open-plotter-window", async () => {
         await plotterWindow.loadURL(`http://localhost:${port}/plotter`);
         plotterWindow.webContents.openDevTools();
     }
-})
 
-ipcMain.on("send-to-plotter", (event, data) => {
-    plotterWindow.webContents.send("plot-data", data)
 })
