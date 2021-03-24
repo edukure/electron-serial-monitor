@@ -2,7 +2,7 @@ import { IpcMainEvent } from 'electron';
 import readline from '@serialport/parser-readline';
 import SerialPort from 'serialport';
 
-interface PortInfo {
+export interface PortInfo {
     port: string;
     baudRate: number;
 }
@@ -14,15 +14,16 @@ export interface ReceivedData extends PortInfo {
     raw: string;
 }
 
-interface Port {
+export interface Port {
     path: string;
     pnpId: string;
+    baudRate?: number;
 }
 
 interface SerialCommunication {
     port: SerialPort;
     listPorts(): Promise<Port[]>;
-    open(channel: IpcMainEvent, config: PortInfo): void;
+    open(channel: IpcMainEvent, config: Port): void;
     close(): Promise<void>;
     write(data: string): void;
     isOpen(): boolean;
@@ -52,8 +53,8 @@ export const createSerialCommunication = (): SerialCommunication => {
         return ports;
     };
 
-    const open = (event: IpcMainEvent, config: PortInfo) => {
-        port = new SerialPort(config.port, { baudRate: config.baudRate });
+    const open = (event: IpcMainEvent, config: Port) => {
+        port = new SerialPort(config.path, { baudRate: config.baudRate });
 
         const parser = new readline();
         port.pipe(parser);
@@ -77,7 +78,7 @@ export const createSerialCommunication = (): SerialCommunication => {
         parser.on('data', (line: string) => {
             const receivedData: ReceivedData = {
                 timestamp: new Date().toISOString(),
-                port: config.port,
+                port: config.path,
                 baudRate: config.baudRate,
                 type: 'values',
                 data: line.split(','),
@@ -121,7 +122,7 @@ export const createSerialCommunication = (): SerialCommunication => {
         event.reply('serial-ports', ports);
     };
 
-    const onOpen = async (event: IpcMainEvent, args: PortInfo) => {
+    const onOpen = async (event: IpcMainEvent, args: Port) => {
         open(event, args);
         event.reply('serial-open', 'Serial opened');
     };

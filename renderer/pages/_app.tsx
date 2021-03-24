@@ -3,6 +3,8 @@ import Head from 'next/head';
 
 import 'antd/dist/antd.css';
 
+import { SerialProvider } from '../context/SerialContext';
+
 const MyApp = ({ Component, pageProps }: AppProps) => {
     return (
         <>
@@ -11,7 +13,10 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
                 <title>Serial Monitor</title>
             </Head>
 
-            <Component {...pageProps} />
+            <SerialProvider>
+                <Component {...pageProps} />
+            </SerialProvider>
+
         </>
     );
 };
