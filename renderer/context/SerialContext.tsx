@@ -1,7 +1,7 @@
 import electron from 'electron';
 import { createContext, ReactNode, useEffect, useState } from 'react';
 
-import { Port } from '../../main/helpers/SerialCommunication';
+import { Port, Data, ReceivedData } from '../../main/helpers/SerialCommunication';
 
 type SerialContextData = {
     portList: Port[];
@@ -10,6 +10,7 @@ type SerialContextData = {
     selectedPort: Port;
     isSerialOpen: boolean;
     refreshSerialPorts(): void;
+    data: Data[];
 };
 
 type SerialProviderProps = {
@@ -22,6 +23,7 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
     const [portList, setPortList] = useState<Port[]>(null);
     const [selectedPort, setSelectedPort] = useState<Port>(null);
     const [isSerialOpen, setIsSerialOpen] = useState(false);
+    const [data, setData] = useState<Data[]>([]);
 
     const ipcRenderer = electron.ipcRenderer || false;
 
@@ -31,6 +33,10 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
             ipcRenderer.on('serial-opened', () => {
                 console.log('serial opened');
             });
+
+            if (!ipcRenderer.eventNames().includes('serial-data')) {
+                ipcRenderer.on('serial-data', onData);
+            }
         }
 
         return () => {
@@ -38,10 +44,30 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
         };
     }, []);
 
+    const formatData = (receivedData: ReceivedData): Data => {
+        const { timestamp, data } = receivedData;
+
+        if (!data) return;
+        const value = parseFloat(data[0]);
+
+        const formatedTimestamp = timestamp.substring(11, 23);
+
+        return {
+            timestamp: formatedTimestamp,
+            value,
+        };
+    };
+
+    const onData = (event, args) => {
+        setData((data) => [...data, formatData(args)]);
+        
+    };
+
     const removeSerialEvents = () => {
         if (ipcRenderer) {
             ipcRenderer.removeAllListeners('serial-opened');
             ipcRenderer.removeAllListeners('serial-ports');
+            ipcRenderer.removeAllListeners("serial-data")
             ipcRenderer.send('serial-disconnect');
         }
     };
@@ -82,6 +108,7 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
                 selectedPort,
                 isSerialOpen,
                 refreshSerialPorts,
+                data
             }}>
             {children}
         </SerialContext.Provider>

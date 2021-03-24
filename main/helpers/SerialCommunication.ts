@@ -32,6 +32,12 @@ interface SerialCommunication {
     onClose(event: IpcMainEvent, args): void;
 }
 
+export interface Data {
+    timestamp: string;
+    value: number;
+}
+
+
 export const createSerialCommunication = (): SerialCommunication => {
     let port: SerialPort = null;
 
