@@ -2,102 +2,106 @@ import { IpcMainEvent } from 'electron';
 import readline from '@serialport/parser-readline';
 import SerialPort from 'serialport';
 
-interface PortData {
+export interface PortInfo {
     port: string;
     baudRate: number;
 }
 
-interface ReceivedData extends PortData {
+export interface ReceivedData extends PortInfo {
     timestamp: string;
     type: 'values' | 'headers';
     data: string[];
     raw: string;
 }
 
-export class SerialCommunication {
-    private port: SerialPort;
+export interface Port {
+    path: string;
+    pnpId: string;
+    baudRate?: number;
+}
 
-    constructor() {
-        this.loadPorts();
-    }
+export interface Data {
+    timestamp: string;
+    value: number;
+}
 
-    public async loadPorts(outChannel?: IpcMainEvent) {
-        let ports = await SerialPort.list();
+interface SerialCommunication {
+    port: SerialPort;
+    listPorts(): Promise<Port[]>;
+    open(channel: IpcMainEvent, config: Port): void;
+    close(): Promise<void>;
+    write(data: string): void;
+    isOpen(): boolean;
+    onListPorts(event: IpcMainEvent, args): void;
+    onOpen(event: IpcMainEvent, args): void;
+    onClose(event: IpcMainEvent, args): void;
+}
 
-        ports = ports
-            .filter((p) => p.serialNumber !== undefined)
-            .map((p) => {
-                const { path, serialNumber, comNumber, pnpId } = p;
-                return { path, serialNumber, comNumber, pnpId };
-            });
+export const createSerialCommunication = (): SerialCommunication => {
+    let port: SerialPort = null;
 
-        if (outChannel) {
-            outChannel.reply('serial-ports', ports);
+    const listPorts = async (): Promise<Port[]> => {
+        let ports = [];
+
+        try {
+            const rawPortsInfo = await SerialPort.list();
+            ports = rawPortsInfo
+                .filter((p) => p.productId !== undefined)
+                .map((p) => {
+                    const { path, pnpId } = p;
+                    return { path, pnpId };
+                });
+        } catch (error) {
+            console.log("Couldn't list serial ports");
         }
-    }
 
-    public open(data: PortData, outChannel: IpcMainEvent) {
-        this.port = new SerialPort(
-            data.port,
-            {
-                baudRate: data.baudRate,
-            },
-            (err) => {
-                if (err) {
-                    console.log('SerialPort.open error', err);
-                    outChannel.reply('serial-error', err.message);
-                }
-            }
-        );
+        return ports;
+    };
 
-        const parser = new readline();
-        this.port.pipe(parser);
+    const open = (event: IpcMainEvent, config: Port) => {
+        port = new SerialPort(config.path, { baudRate: config.baudRate });
 
-        this.port.on('open', () => {
+        const parser = new readline({ delimiter: '\r\n' });
+        port.pipe(parser);
+
+        port.on('open', () => {
             try {
-                outChannel.reply('serial-opened', 'opened');
+                event.reply('serial-opened', 'opened');
             } catch (err) {
                 console.log('IpcMainEvent: failed to respond "serial port opened"');
             }
         });
 
-        this.port.on('close', () => {
+        port.on('close', () => {
             try {
-                outChannel.reply('serial-closed', 'closed');
+                event.reply('serial-closed', 'closed');
             } catch (err) {
                 console.log('IpcMainEvent: failed to respond "serial port closed"');
             }
         });
 
-        let first = true;
         parser.on('data', (line: string) => {
-            const outData: ReceivedData = {
+            const receivedData: ReceivedData = {
                 timestamp: new Date().toISOString(),
-                port: data.port,
-                baudRate: data.baudRate,
+                port: config.path,
+                baudRate: config.baudRate,
                 type: 'values',
                 data: line.split(','),
                 raw: line,
             };
 
-            if (first) {
-                first = false;
-                outData.type = 'headers';
-                outData.data = line.split(',');
-            }
-
             try {
-                outChannel.reply('serial-data', JSON.stringify(outData));
+                event.reply('serial-data', receivedData);
             } catch (err) {
                 console.log('IpcMainEvent: failed to respond "serial data"');
             }
         });
-    }
+    };
 
-    public async close(): Promise<void> {
-        if (this.port && this.port.isOpen) {
+    const close = async (): Promise<void> => {
+        if (port && port.isOpen) {
             return new Promise((resolve, reject) => {
-                this.port.close((err) => {
+                port.close((err) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -106,15 +110,45 @@ export class SerialCommunication {
                 });
             });
         }
-    }
+    };
 
-    public async write(data: string) {
-        if (this.port && this.port.isOpen) {
-            this.port.write(data);
+    const write = (data: string) => {
+        if (port && port.isOpen) {
+            port.write(data);
         }
-    }
+    };
 
-    public isOpen(): boolean {
-        return this.port && this.port.isOpen;
-    }
-}
+    const isOpen = (): boolean => {
+        return port && port.isOpen;
+    };
+
+    const onListPorts = async (event: IpcMainEvent, args) => {
+        const ports = await listPorts();
+        event.reply('serial-ports', ports);
+    };
+
+    const onOpen = async (event: IpcMainEvent, args: Port) => {
+        if (isOpen()) {
+            await close();
+        }
+        open(event, args);
+        event.reply('serial-open', 'Serial opened');
+    };
+
+    const onClose = async (event: IpcMainEvent, args) => {
+        close();
+        event.reply('serial-closed', 'Serial closed');
+    };
+
+    return {
+        port,
+        open,
+        onOpen,
+        isOpen,
+        close,
+        onClose,
+        listPorts,
+        onListPorts,
+        write,
+    };
+};

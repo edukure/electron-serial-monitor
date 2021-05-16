@@ -75,7 +75,14 @@ export default function createWindow(windowName, options) {
     },
   });
 
-  win.on('close', saveState);
+  win.on('close', () => {
+    saveState()
+    win = null;
+  });
+
+  win.on("closed", (event) => {
+    win = null
+  }) 
 
   return win;
 };

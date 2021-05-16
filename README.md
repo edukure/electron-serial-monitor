@@ -22,3 +22,14 @@ $ yarn dev (or `npm run dev` or `pnpm run dev`)
 # production build
 $ yarn build (or `npm run build` or `pnpm run build`)
 ```
+
+### Todo
+- [x] Create Serial Context
+- [ ] Create serial events enum
+- [x] Refactor SerialCommunication (remove adding event listeners)
+- [ ] Implement Write operation in SerialCommuncation
+- [ ] Change timestamp color to light grayish
+- [x] Implement SerialContext in Monitor
+- [ ] Implement flush before starting serial port reading
+- [ ] Implement pause and resume
+- [ ] Implement DataStore 
