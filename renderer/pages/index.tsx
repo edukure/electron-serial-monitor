@@ -1,4 +1,3 @@
-import MonitorPageLayout from '../components/MonitorPageLayout';
 import HomeLayout from '../components/HomeLayout';
 
 import { SerialProvider } from '../context/SerialContext';

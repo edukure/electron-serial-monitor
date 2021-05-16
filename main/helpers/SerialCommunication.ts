@@ -61,7 +61,7 @@ export const createSerialCommunication = (): SerialCommunication => {
     const open = (event: IpcMainEvent, config: Port) => {
         port = new SerialPort(config.path, { baudRate: config.baudRate });
 
-        const parser = new readline();
+        const parser = new readline({ delimiter: '\r\n' });
         port.pipe(parser);
 
         port.on('open', () => {

@@ -1,5 +1,5 @@
 import electron from 'electron';
-import { createContext, ReactNode, useEffect, useState } from 'react';
+import { createContext, ReactNode, useEffect, useRef, useState } from 'react';
 
 import { Port, Data, ReceivedData } from '../../main/helpers/SerialCommunication';
 
@@ -11,6 +11,7 @@ type SerialContextData = {
     isSerialOpen: boolean;
     refreshSerialPorts(): void;
     data: Data[];
+    dataPackage: Data[]
 };
 
 type SerialProviderProps = {
@@ -24,6 +25,14 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
     const [selectedPort, setSelectedPort] = useState<Port>(null);
     const [isSerialOpen, setIsSerialOpen] = useState(false);
     const [data, setData] = useState<Data[]>([]);
+    const [dataPackage, setDataPackage] = useState<Data[]>([]);
+
+    const pkgRef = useRef(dataPackage);
+
+    const _setDataPackage = (data: Data) => {
+        pkgRef.current = [...pkgRef.current, data];
+        setDataPackage((d) => [...d, data])
+    }
 
     const ipcRenderer = electron.ipcRenderer || false;
 
@@ -35,7 +44,7 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
             });
 
             if (!ipcRenderer.eventNames().includes('serial-data')) {
-                ipcRenderer.on('serial-data', onData);
+                ipcRenderer.on('serial-data', (event, args) => onData(event, args));
             }
         }
 
@@ -50,16 +59,17 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
         if (!data) return;
         const value = parseFloat(data[0]);
 
-        const formatedTimestamp = timestamp.substring(11, 23);
+        // const formatedTimestamp = timestamp.substring(11, 23);
 
         return {
-            timestamp: formatedTimestamp,
+            timestamp: timestamp,
             value,
         };
     };
 
     const onData = (event, args) => {
         setData((data) => [...data, formatData(args)]);
+        _setDataPackage(formatData(args));
     };
 
     const removeSerialEvents = () => {
@@ -108,6 +118,7 @@ export const SerialProvider = ({ children }: SerialProviderProps) => {
                 isSerialOpen,
                 refreshSerialPorts,
                 data,
+                dataPackage
             }}>
             {children}
         </SerialContext.Provider>

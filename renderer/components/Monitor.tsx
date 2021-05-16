@@ -4,11 +4,12 @@ import { List, Input, Button } from 'antd';
 import { SerialContext } from '../context/SerialContext';
 
 const Monitor = () => {
-    const { data } = useContext(SerialContext);
+    const { data, dataPackage } = useContext(SerialContext);
 
     useEffect(() => {
         let element = document.getElementById('scroll');
         element.scrollTop = element.scrollHeight - element.clientHeight;
+        console.log(dataPackage);
     }, [data]);
 
     return (
@@ -37,7 +38,7 @@ const Monitor = () => {
                 style={{ maxHeight: '100%', overflow: 'auto' }}
                 size="small"
                 dataSource={data}
-                renderItem={(item) => <List.Item>{`${item.timestamp}: ${item.value}`}</List.Item>}
+                renderItem={(item) => <List.Item>{`${item.timestamp.substring(11, 23)}: ${item.value}`}</List.Item>}
             />
         </div>
     );

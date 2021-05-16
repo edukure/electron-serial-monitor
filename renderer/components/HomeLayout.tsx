@@ -3,17 +3,18 @@ import React, { useContext, useState } from 'react';
 import { Layout, Typography, Button, Space } from 'antd';
 import { LineChartOutlined, CodeOutlined } from '@ant-design/icons';
 
-const { Text } = Typography;
-
 const { Content, Header } = Layout;
 
 import SerialConnect from './SerialConnect';
 import Monitor from './Monitor';
 import Plot from "./Plot";
+import { SerialContext } from '../context/SerialContext';
 
 const HomeLayout = () => {
     const [isMonitorShowing, setIsMonitorShowing] = useState(true);
     const [isPlotShowing, setIsPlotShowing] = useState(false);
+
+    const { isSerialOpen } = useContext(SerialContext)
 
 
     const handleShowPlot = () => {
@@ -47,7 +48,8 @@ const HomeLayout = () => {
                         </Button>
 
                         <Button onClick={handleShowPlot} icon={<LineChartOutlined />}
-                        type={isPlotShowing ? "primary" : "default"}>
+                        type={isPlotShowing ? "primary" : "default"}
+                        disabled={!isSerialOpen}>
                             Plotter
                             
                         </Button>
